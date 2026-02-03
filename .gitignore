@@ -1,0 +1,41 @@
+# Python virtual environment
+venv/
+env/
+ENV/
+*.pyc
+__pycache__/
+
+# Large data files - PTB-XL ECG records
+data/ptbxl/records500/
+data/ptb-xl/
+
+# Model checkpoints and outputs
+outputs/
+*.pt
+*.pth
+*.ckpt
+
+# FAISS indices
+*.index
+*.faiss
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.bak
