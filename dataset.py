@@ -47,6 +47,12 @@ class PTBXLDataset(Dataset):
         
         # Load ECG signal using wfdb
         try:
+            # Convert Windows path to relative path
+            # E:/ecg-regen/data/ptbxl/... -> data/ptbxl/...
+            if ':' in ecg_path:  # Windows path detected
+                ecg_path = ecg_path.split('data/')[-1]  # Get everything after 'data/'
+                ecg_path = 'data/' + ecg_path
+            
             # Remove the _hr suffix if present
             if ecg_path.endswith('_hr'):
                 ecg_path = ecg_path[:-3]

@@ -71,8 +71,14 @@ class ECGReGenTrainer:
         negative_indices = (negative_indices + 1) % batch_size
         return negative_indices
     
-    def train_step(self, batch, optimizer):
-        """Single training step"""
+    def train_step(self, batch, optimizer, update_weights=True):
+        """Single training step with optional gradient accumulation
+        
+        Args:
+            batch: Input batch
+            optimizer: Optimizer
+            update_weights: Whether to update weights (for gradient accumulation)
+        """
         self.model.train()
         
         ecg = batch['ecg'].to(self.device)
@@ -101,7 +107,6 @@ class ECGReGenTrainer:
         text_mask_neg = text_mask[negative_indices]
         
         # Forward pass with positive pairs
-        optimizer.zero_grad()
         outputs_pos = self.model(
             ecg=ecg,
             text_ids=text_ids_masked,
@@ -164,8 +169,12 @@ class ECGReGenTrainer:
         
         # Backward pass
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-        optimizer.step()
+        
+        # Update weights if specified (for gradient accumulation)
+        if update_weights:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+            optimizer.step()
+            optimizer.zero_grad()  # Zero gradients after update
         
         return {
             'total_loss': total_loss.item(),

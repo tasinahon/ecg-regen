@@ -21,6 +21,12 @@ def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     
+    # Enable memory efficient settings
+    if torch.cuda.is_available():
+        torch.backends.cudnn.benchmark = True
+        # Clear cache before starting
+        torch.cuda.empty_cache()
+    
     # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
     
@@ -81,6 +87,10 @@ def train(args):
         weight_decay=args.weight_decay
     )
     
+    # Gradient accumulation steps
+    accumulation_steps = getattr(args, 'accumulation_steps', 4)
+    print(f"Using gradient accumulation: {accumulation_steps} steps")
+    
     # Learning rate scheduler
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
@@ -115,8 +125,11 @@ def train(args):
         last_report_percent = -5  # Track when we last showed reports
         
         pbar = tqdm(train_loader, desc='Training')
+        optimizer.zero_grad()  # Zero gradients at start
+        
         for batch_idx, batch in enumerate(pbar):
-            losses = trainer.train_step(batch, optimizer)
+            # Train step without optimizer update (for gradient accumulation)
+            losses = trainer.train_step(batch, optimizer, update_weights=(batch_idx + 1) % accumulation_steps == 0)
             
             for k, v in losses.items():
                 train_losses[k] += v
@@ -325,6 +338,8 @@ def main():
     # Training hyperparameters
     parser.add_argument('--batch_size', type=int, default=8,
                         help='Batch size (reduced default to prevent OOM)')
+    parser.add_argument('--accumulation_steps', type=int, default=4,
+                        help='Gradient accumulation steps to simulate larger batch size')
     parser.add_argument('--epochs', type=int, default=50,
                         help='Number of training epochs')
     parser.add_argument('--learning_rate', type=float, default=5e-5,
